@@ -7,7 +7,8 @@ As AI explains it very well, here is why it's named tourdego:
 
 # Demo:
 Here is a small example of how to use this shell:
-`package main
+```
+package main
 
 import (
 	shell "cs50-romain/tourdego/pkg"
@@ -30,4 +31,5 @@ func main() {
 
 func Intro() {
 	fmt.Printf("%s%s%s%s\n", color.Bold, color.Yellow, "This is an interactive shell.\nPress quit or exit to exit this shell. Please enjoy!", color.Reset)
-}`
+}
+```
