@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 
 	"cs50-romain/tourdego/pkg/color"
 )
@@ -12,15 +13,23 @@ type Shell struct {
 	prompt		string
 	history		*os.File
 	autocomplete	bool
-	commands	map[string]func() error
+	commands	map[string]func(...string) error
 }
 
 func NewShell(prompt string) *Shell {
-	return &Shell{
+	s := &Shell{
 		prompt: prompt,
 		autocomplete: false,
-		commands: make(map[string]func() error),
+		commands: make(map[string]func(...string) error),
 	}
+
+	s.AddCommand("quit", func(...string) error {
+		fmt.Println("Goodbye!")
+		os.Exit(0)
+		return nil
+	})
+
+	return s
 }
 
 func (s *Shell) Start() error {
@@ -32,7 +41,20 @@ func (s *Shell) Start() error {
 		if err != nil {
 			return err
 		}
-		fmt.Println(userInput)
+		command := strings.Trim(userInput, "\n")
+		handler, ok := s.commands[command]
+
+		if !ok {
+			fmt.Printf("%s%s%s\n",color.Red, "Invalid command", color.Reset)
+			continue
+		}
+		// if history is enabled, we want to add to history file.
+
+		err = handler()
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
 	}
 }
 
@@ -47,8 +69,6 @@ func (s *Shell) SetPromptBold(isBold bool) {
 	}
 }
 
-func (s *Shell) AddCommand(command string, option ...string) {
-	s.commands[command] = func () error {
-		return nil
-	}
+func (s *Shell) AddCommand(command string, handler func(...string) error) {
+	s.commands[command] = handler 
 }

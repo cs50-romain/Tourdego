@@ -10,7 +10,10 @@ import (
 func main() {
 	shell := shell.NewShell(">")
 	shell.SetPromptColor(color.Blue)
-	shell.AddCommand("view")
+	shell.AddCommand("view", func(s ...string) error {
+		fmt.Println("Viewing something in the distance...")
+		return nil
+	})
 
 	Intro()
 	fmt.Println(color.Reset)
