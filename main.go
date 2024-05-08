@@ -8,16 +8,20 @@ import (
 )
 
 func main() {
-	shell := shell.NewShell(">")
-	shell.SetPromptColor(color.Blue)
-	shell.AddCommand("view", func(s ...string) error {
-		fmt.Println("Viewing something in the distance...")
-		return nil
+	sh := shell.NewShell(">")
+	sh.SetPromptColor(color.Blue)
+	sh.AddCommand("view", &shell.Cmd{
+		Name: "view",
+		Help: "echo the user input",
+		Handler: func (...string) error {
+			fmt.Println("Viewing something in the distance")
+			return nil
+		},
 	})
 
 	Intro()
 	fmt.Println(color.Reset)
-	if err := shell.Start(); err != nil {
+	if err := sh.Start(); err != nil {
 		panic(err)
 	}
 }
