@@ -10,6 +10,16 @@ import (
 func main() {
 	sh := shell.NewShell(">")
 	sh.SetPromptColor(color.Blue)
+	selectCmd := &shell.Cmd{
+		Name: "select",
+		Help: "select an option",
+		Handler: func(s ...string) error {
+			fmt.Println("Selecting option", s)
+			return nil
+		},
+	}
+	sh.AddCommand("select", selectCmd)
+
 	sh.AddCommand("view", &shell.Cmd{
 		Name: "view",
 		Help: "echo the user input",
@@ -17,6 +27,7 @@ func main() {
 			fmt.Println("Viewing something in the distance")
 			return nil
 		},
+		NextCmd: selectCmd,
 	})
 
 	Intro()

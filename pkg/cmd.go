@@ -7,6 +7,7 @@ type Cmd struct {
 	// Function to execute for the command
 	Handler	func(...string) error
 	subCommands []*Cmd
+	NextCmd *Cmd
 }
 
 func NewCmd(name string, help string) *Cmd {
