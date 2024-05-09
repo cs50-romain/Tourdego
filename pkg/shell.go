@@ -16,7 +16,7 @@ type Shell struct {
 	history		*os.File
 	autocomplete	bool
 	RootCmd		*Cmd
-	//Remember the previous command
+	//Remember the previous command - Will be an option that can be set or unset
 	lastCommand	*Cmd
 	commands	map[string]*Cmd
 }
@@ -92,20 +92,26 @@ func (s *Shell) Start() error {
 		if err != nil {
 			return err
 		}
-		commandName := strings.Trim(userInput, "\n")
-		// More parsing needs done to separate the rootcommand from the subcommands/options
+		lineAfterRemovingEOL := strings.Trim(userInput, "\n")
+		// More parsing needs done to separate the rootcommand from the subcommands/options	
+		userInputSplit := strings.Split(lineAfterRemovingEOL, " ")
+
+		commandName := userInputSplit[0]
+		subcommands := userInputSplit[1:]
 		command, ok := s.commands[commandName]
 
-		
-
 		if !ok {
-			fmt.Printf("%s%s%s\n",color.Red, "Invalid command", color.Reset)
-			continue
+			// Try the lastCommand's NextCmd's handler
+			err = s.lastCommand.NextCmd.Handler(userInputSplit...)
+			if err != nil {
+				fmt.Printf("%s%s%s\n",color.Red, "Invalid command", color.Reset)
+			}
+			continue	
 		}
 		// if history is enabled, we want to add to history file.
 
 
-		err = command.Handler()
+		err = command.Handler(subcommands...)
 		if err != nil {
 			fmt.Println(err)
 			continue
