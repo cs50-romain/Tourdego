@@ -33,3 +33,7 @@ func Intro() {
 	fmt.Printf("%s%s%s%s\n", color.Bold, color.Yellow, "This is an interactive shell.\nPress quit or exit to exit this shell. Please enjoy!", color.Reset)
 }
 ```
+
+# AutoCompletion & Command History
+Autocompletion will be the last feature I add to this project for now. Command history will have to wait and I explain below.
+Well this is a little harder to implement. Here's what I'm thinking: First the terminal would have to be in raw mode to capture a lot of things (up, down, enter, display the command history...). 
