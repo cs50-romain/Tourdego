@@ -123,8 +123,7 @@ func (s *Shell) RunRawMode() error {
 			fmt.Printf("%s%s ", esc.MoveCursorLeft(1000), s.prompt)
 		} else if b[0] == esc.ENTER() {
 			TermWrite(esc.NEWLINE(), "")
-			os.Stdout.Write(buf[2:])
-			//os.Stdout.Write([]byte("\u001b[E> "))
+			s.parseCommand(string(buf))
 			TermWrite(esc.NEWLINE(), s.prompt + " ")
 			buf = make([]byte, 32)
 		} else {
@@ -135,7 +134,7 @@ func (s *Shell) RunRawMode() error {
 	}
 }
 
-func readByte() {
+func parseByte() {
 	buf := make([]byte, 32)
 	b := make([]byte, 1)
 	os.Stdin.Read(b)
@@ -149,6 +148,7 @@ func readByte() {
 		os.Stdout.Write([]byte("tabbed\n"))
 		fmt.Printf("%s> ", esc.MoveCursorLeft(1000))
 	} else if b[0] == esc.ENTER() {
+		// Parse the command
 		TermWrite(esc.NEWLINE(), "")
 		os.Stdout.Write(buf[2:])
 		//os.Stdout.Write([]byte("\u001b[E> "))
@@ -174,33 +174,38 @@ func (s *Shell) RunCookedMode() error {
 		if err != nil {
 			return err
 		}
+
+		// This code can probably be moved to a function
 		lineAfterRemovingEOL := strings.Trim(userInput, "\n")
-		// More parsing needs done to separate the rootcommand from the subcommands/options	
-		userInputSplit := strings.Split(lineAfterRemovingEOL, " ")
-
-		commandName := userInputSplit[0]
-		subcommands := userInputSplit[1:]
-		command, ok := s.commands[commandName]
-
-		if !ok {
-			// Try the lastCommand's NextCmd's handler
-			err = s.lastCommand.NextCmd.Handler(userInputSplit...)
-			if err != nil {
-				fmt.Printf("%s%s%s\n",color.Red, "Invalid command", color.Reset)
-			}
-			continue	
-		}
-		// if history is enabled, we want to add to history file.
-
-
-		err = command.Handler(subcommands...)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-		// Make the command the last command executed
-		s.lastCommand = command
+		s.parseCommand(lineAfterRemovingEOL)
 	}
+}
+
+func (s *Shell) parseCommand(input string) {
+	var err error
+	userInputSplit := strings.Split(input, " ")
+
+	commandName := userInputSplit[0]
+	subcommands := userInputSplit[1:]
+	command, ok := s.commands[commandName]
+
+	if !ok {
+		// Try the lastCommand's NextCmd's handler
+		//err = s.lastCommand.NextCmd.Handler(userInputSplit...)
+		//if err != nil {
+		fmt.Printf("%s%s%s\n",color.Red, "Invalid command", color.Reset)
+		//}
+		return
+	}
+	// if history is enabled, we want to add to history file.
+
+	err = command.Handler(subcommands...)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	// Make the command the last command executed
+	s.lastCommand = command
 }
 
 // Return a string with the color escape character and reset.
