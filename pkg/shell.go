@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"cs50-romain/tourdego/pkg/color"
+	"cs50-romain/tourdego/pkg/esc"
+	"golang.org/x/term"
 )
 
 // Represents a shell
@@ -16,6 +18,7 @@ type Shell struct {
 	history		*os.File
 	autocomplete	bool
 	RootCmd		*Cmd
+	RawMode		bool
 	//Remember the previous command - Will be an option that can be set or unset
 	lastCommand	*Cmd
 	commands	map[string]*Cmd
@@ -82,8 +85,87 @@ func WithHelp() {
 
 }
 
+// Raw mode should be enabled if autocompletion is required or if user wants raw mode.
+func WithRawMode() {
+
+}
+
 // Starts a Shell
 func (s *Shell) Start() error {
+	if s.RawMode == true || s.autocomplete == true {
+		fmt.Println("Running raw mode...")
+		return s.RunRawMode()	
+	} else {
+		return s.RunCookedMode()
+	}
+}
+
+func (s *Shell) RunRawMode() error {
+	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+	if err != nil {
+		panic(err)
+	}
+	defer term.Restore(int(os.Stdin.Fd()), oldState)
+	
+	buf := make([]byte, 32)
+	fmt.Print(s.prompt)
+	for {
+		b := make([]byte, 1)
+		os.Stdin.Read(b)
+
+		if b[0] == esc.CTRLC() {
+			fmt.Printf("\n%sGoodbye...\n", esc.MoveCursorLeft(1000))
+			//fmt.Print(cursor_left)
+			TermWrite([]byte(esc.MoveCursorLeft(1000)), "")
+			return nil
+		} else if b[0] == esc.TAB() {
+			os.Stdout.Write([]byte("tabbed\n"))
+			fmt.Printf("%s%s ", esc.MoveCursorLeft(1000), s.prompt)
+		} else if b[0] == esc.ENTER() {
+			TermWrite(esc.NEWLINE(), "")
+			os.Stdout.Write(buf[2:])
+			//os.Stdout.Write([]byte("\u001b[E> "))
+			TermWrite(esc.NEWLINE(), s.prompt + " ")
+			buf = make([]byte, 32)
+		} else {
+			os.Stdout.Write(b)
+			buf = append(buf, b...)
+		}
+		// Expand buffer size if current buffer too small
+	}
+}
+
+func readByte() {
+	buf := make([]byte, 32)
+	b := make([]byte, 1)
+	os.Stdin.Read(b)
+
+	if b[0] == esc.CTRLC() {
+		fmt.Printf("\n%sGoodbye...\n", esc.MoveCursorLeft(1000))
+		//fmt.Print(cursor_left)
+		TermWrite([]byte(esc.MoveCursorLeft(1000)), "")
+		return
+	} else if b[0] == esc.TAB() {
+		os.Stdout.Write([]byte("tabbed\n"))
+		fmt.Printf("%s> ", esc.MoveCursorLeft(1000))
+	} else if b[0] == esc.ENTER() {
+		TermWrite(esc.NEWLINE(), "")
+		os.Stdout.Write(buf[2:])
+		//os.Stdout.Write([]byte("\u001b[E> "))
+		TermWrite(esc.NEWLINE(), "> ")
+		buf = make([]byte, 32)
+	} else {
+		os.Stdout.Write(b)
+		buf = append(buf, b...)
+	}
+}
+
+func TermWrite(ESC_CODE []byte, extra string) {
+	line := fmt.Sprintf("%s%s%s", esc.ESCAPE(), ESC_CODE, extra)
+	os.Stdout.Write([]byte(line))
+}
+
+func (s *Shell) RunCookedMode() error {
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		// Remember to print in color by calling SetPromptColor()
