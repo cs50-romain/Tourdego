@@ -30,6 +30,8 @@ func main() {
 		NextCmd: selectCmd,
 	})
 
+	sh.RawMode = true
+
 	Intro()
 	fmt.Println(color.Reset)
 	if err := sh.Start(); err != nil {
