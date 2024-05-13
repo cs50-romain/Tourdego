@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	sh := shell.NewShell(">")
+	sh := shell.NewShell("> ")
 	sh.SetPromptColor(color.Blue)
 	selectCmd := &shell.Cmd{
 		Name: "select",

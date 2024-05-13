@@ -59,7 +59,6 @@ func NewShell(prompt string) *Shell {
 	quitCommand := NewCmd("quit", "quit the program")
 	quitCommand.HandlerMethod(func(subcommands ...string) error {
 		fmt.Println("Goodbye!")
-		//os.Exit(0)
 		return nil
 	})
 	s.AddCommand("quit", quitCommand)
@@ -69,9 +68,7 @@ func NewShell(prompt string) *Shell {
 		Help: "exit the program",
 		Handler: func(...string) error {
 			fmt.Println("Goodbye!")
-			s.cleanUp()
-			os.Exit(0)
-			return nil		
+			return nil
 		},
 	})
 
@@ -125,14 +122,17 @@ func (s *Shell) RunRawMode() error {
 			fmt.Printf("%s%s ", esc.MoveCursorLeft(1000), s.prompt)
 		} else if b[0] == esc.ENTER() {
 			TermWrite(esc.NEWLINE(), "")
-			s.parseCommand(string(buf))
-			
-			if string(buf) == "quit" || string(buf) == "exit" {
+			commandName, err := s.parseCommand(string(buf))
+			if err != nil {
+				return err
+			}
+
+			if commandName == "quit" || commandName == "exit" {
 				fmt.Printf("%s", esc.MoveCursorLeft(1000))
 				TermWrite([]byte(esc.MoveCursorLeft(1000)), "")
 				return nil
 			}
-
+		
 			TermWrite(esc.NEWLINE(), s.prompt + " ")
 			buf = make([]byte, 0)
 		} else {
@@ -186,11 +186,18 @@ func (s *Shell) RunCookedMode() error {
 
 		// This code can probably be moved to a function
 		lineAfterRemovingEOL := strings.Trim(userInput, "\n")
-		s.parseCommand(lineAfterRemovingEOL)
+		commandName, err := s.parseCommand(lineAfterRemovingEOL)
+		if err != nil {
+			return err
+		}
+
+		if commandName == "quit" || commandName == "exit" {
+			return nil
+		}
 	}
 }
 
-func (s *Shell) parseCommand(input string) error {
+func (s *Shell) parseCommand(input string) (string, error) {
 	var err error
 	userInputSplit := strings.Split(input, " ")
 
@@ -204,24 +211,17 @@ func (s *Shell) parseCommand(input string) error {
 		//if err != nil {
 		fmt.Printf("%s%s%s\n",color.Red, "Invalid command", color.Reset)
 		//}
-		return nil
+		return "", nil
 	}
 	// if history is enabled, we want to add to history file.
 
 	err = command.Handler(subcommands...)
 	if err != nil {
-		return err
+		return "", err
 	}
 	// Make the command the last command executed
 	s.lastCommand = command
-	return nil
-}
-
-func (s *Shell) cleanUp() {
-	if s.RawMode == true {
-		fmt.Printf("%s\n", esc.MoveCursorLeft(1000))
-		TermWrite([]byte(esc.MoveCursorLeft(1000)), "")
-	}
+	return commandName, nil
 }
 
 // Return a string with the color escape character and reset.
