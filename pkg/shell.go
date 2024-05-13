@@ -59,7 +59,7 @@ func NewShell(prompt string) *Shell {
 	quitCommand := NewCmd("quit", "quit the program")
 	quitCommand.HandlerMethod(func(subcommands ...string) error {
 		fmt.Println("Goodbye!")
-		os.Exit(0)
+		//os.Exit(0)
 		return nil
 	})
 	s.AddCommand("quit", quitCommand)
@@ -69,6 +69,7 @@ func NewShell(prompt string) *Shell {
 		Help: "exit the program",
 		Handler: func(...string) error {
 			fmt.Println("Goodbye!")
+			s.cleanUp()
 			os.Exit(0)
 			return nil		
 		},
@@ -94,6 +95,7 @@ func WithRawMode() {
 func (s *Shell) Start() error {
 	if s.RawMode == true || s.autocomplete == true {
 		fmt.Println("Running raw mode...")
+
 		return s.RunRawMode()	
 	} else {
 		return s.RunCookedMode()
@@ -101,21 +103,21 @@ func (s *Shell) Start() error {
 }
 
 func (s *Shell) RunRawMode() error {
+	// save current commands to json file.
 	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
 		panic(err)
 	}
 	defer term.Restore(int(os.Stdin.Fd()), oldState)
-	
-	buf := make([]byte, 32)
+
+	buf := make([]byte, 0)
 	fmt.Print(s.prompt)
 	for {
 		b := make([]byte, 1)
 		os.Stdin.Read(b)
 
 		if b[0] == esc.CTRLC() {
-			fmt.Printf("\n%sGoodbye...\n", esc.MoveCursorLeft(1000))
-			//fmt.Print(cursor_left)
+			fmt.Printf("\n%s\n", esc.MoveCursorLeft(1000))
 			TermWrite([]byte(esc.MoveCursorLeft(1000)), "")
 			return nil
 		} else if b[0] == esc.TAB() {
@@ -124,8 +126,15 @@ func (s *Shell) RunRawMode() error {
 		} else if b[0] == esc.ENTER() {
 			TermWrite(esc.NEWLINE(), "")
 			s.parseCommand(string(buf))
+			
+			if string(buf) == "quit" || string(buf) == "exit" {
+				fmt.Printf("%s", esc.MoveCursorLeft(1000))
+				TermWrite([]byte(esc.MoveCursorLeft(1000)), "")
+				return nil
+			}
+
 			TermWrite(esc.NEWLINE(), s.prompt + " ")
-			buf = make([]byte, 32)
+			buf = make([]byte, 0)
 		} else {
 			os.Stdout.Write(b)
 			buf = append(buf, b...)
@@ -181,31 +190,38 @@ func (s *Shell) RunCookedMode() error {
 	}
 }
 
-func (s *Shell) parseCommand(input string) {
+func (s *Shell) parseCommand(input string) error {
 	var err error
 	userInputSplit := strings.Split(input, " ")
 
 	commandName := userInputSplit[0]
 	subcommands := userInputSplit[1:]
 	command, ok := s.commands[commandName]
-
+	
 	if !ok {
 		// Try the lastCommand's NextCmd's handler
 		//err = s.lastCommand.NextCmd.Handler(userInputSplit...)
 		//if err != nil {
 		fmt.Printf("%s%s%s\n",color.Red, "Invalid command", color.Reset)
 		//}
-		return
+		return nil
 	}
 	// if history is enabled, we want to add to history file.
 
 	err = command.Handler(subcommands...)
 	if err != nil {
-		fmt.Println(err)
-		return
+		return err
 	}
 	// Make the command the last command executed
 	s.lastCommand = command
+	return nil
+}
+
+func (s *Shell) cleanUp() {
+	if s.RawMode == true {
+		fmt.Printf("%s\n", esc.MoveCursorLeft(1000))
+		TermWrite([]byte(esc.MoveCursorLeft(1000)), "")
+	}
 }
 
 // Return a string with the color escape character and reset.
