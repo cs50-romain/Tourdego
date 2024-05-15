@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"cs50-romain/tourdego/pkg/color"
-	"cs50-romain/tourdego/pkg/esc"
+	"github.com/cs50-romain/tourdego/pkg/color"
+	"github.com/cs50-romain/tourdego/pkg/esc"
 	"golang.org/x/term"
 )
 
