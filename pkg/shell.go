@@ -133,7 +133,7 @@ func (s *Shell) RunRawMode() error {
 				return nil
 			}
 		
-			TermWrite(esc.NEWLINE(), s.prompt + " ")
+			TermWrite(esc.NEWLINE(), s.prompt)
 			buf = make([]byte, 0)
 		} else {
 			os.Stdout.Write(b)
