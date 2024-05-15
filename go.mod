@@ -1,4 +1,4 @@
-module cs50-romain/tourdego
+module github.com/cs50-romain/tourdego
 
 go 1.20
 

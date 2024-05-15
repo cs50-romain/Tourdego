@@ -1,10 +1,10 @@
 package main
 
 import (
-	shell "cs50-romain/tourdego/pkg"
+	shell "github.com/cs50-romain/tourdego/pkg"
 	"fmt"
 
-	"cs50-romain/tourdego/pkg/color"
+	"github.com/cs50-romain/tourdego/pkg/color"
 )
 
 func main() {
