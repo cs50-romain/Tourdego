@@ -224,6 +224,10 @@ func (s *Shell) parseCommand(input string) (string, error) {
 	return commandName, nil
 }
 
+func (s *Shell) SetPrompt(prompt string) {
+	s.prompt = prompt
+}
+
 // Return a string with the color escape character and reset.
 func (s *Shell) SetPromptColor(setColor string) {
 	s.prompt = fmt.Sprintf("%s%s%s", setColor, s.prompt, color.Reset)
